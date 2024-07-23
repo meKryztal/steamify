@@ -197,15 +197,11 @@ class PixelTod:
             task_title = task["name"]
             task_status = task["user_state"]["status"]
 
-            if task_status == "available":
+            if task_status == "available" or task_status == "completed":
 
                 url_start = f"https://api.app.steamify.io/api/v1/user/task/{task_id}/start"
                 res = self.api_call(url_start, headers=headers)
-                response_json = res.json()
-                tasks = response_json.get('data', {}).get('tasks', [])
 
-
-            if task_status == "completed":
 
                 url_claim = f"https://api.app.steamify.io/api/v1/user/task/{task_id}/claim"
                 res = self.api_call(url_claim, headers=headers)
