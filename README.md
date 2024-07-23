@@ -53,6 +53,7 @@ https://telegra.ph/Avtoklikker-dlya-BLUM-GAJD-05-29
    
 
 
+
 ## Вставить в файл init_data ключи такого вида, каждый новый ключ с новой строки:
    ```
    query_id=xxxxxxxxxx&user=xxxxxxfirst_namexxxxxlast_namexxxxxxxusernamexxxxxxxlanguage_codexxxxxxxallows_write_to_pmxxxxxxx&auth_date=xxxxxx&hash=xxxxxxx
@@ -63,4 +64,6 @@ https://telegra.ph/Avtoklikker-dlya-BLUM-GAJD-05-29
 Вместо query_id= может быть user=, разницы нету
 # Как получить query_id:
 Заходите в telegram web, открываете бота, жмете F12 или в десктопной версии открывайте окно, правой кнопкой жмете и выбираете самое нижнее "проверить" и переходите в Network, жмете старт в веб версии или перезагружаете страницу в десктопной, ищете запрос с именем info, в правой колонке находите Rawdata: query_id=бла бла бла или user=
-![photo_2024-07-18_21-54-55](https://github.com/user-attachments/assets/7e432a6f-d944-406b-80fd-0a3931b1876e)
+
+![photo_2024-07-24_01-33-06](https://github.com/user-attachments/assets/0fd130cd-e8e9-4e71-bf57-9f7a9b4e9d56)
+
