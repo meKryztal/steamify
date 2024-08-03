@@ -31,7 +31,7 @@ class PixelTod:
             "X-Requested-With": "org.telegram.messenger",
             'origin': 'https://app.steamify.io',
             'referer': 'https://app.steamify.io',
-            "User-Agent": self.get_random_user_agent(),
+            "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0',
         }
 
     def get_random_user_agent(self):
@@ -81,6 +81,7 @@ class PixelTod:
         self.solve_task(data)
         self.checkin(data)
         self.solve_multiplier(data)
+
     def countdown(self, t):
         while t:
             one, two = divmod(t, 3600)
@@ -124,11 +125,20 @@ class PixelTod:
         try:
             response_json = res.json()
             #self.log(f'{response_json}')
-            balance = response_json.get('data', {}).get('balance', 'N/A')
+            balance = response_json.get('data', {}).get('points', 'N/A')
             self.log(f'{Fore.LIGHTYELLOW_EX}Общий баланс: {Fore.LIGHTWHITE_EX}{balance}')
+            ref = response_json.get('data', {}).get('inviter')
+            if ref == 'None':
+                url_ref = 'https://api.app.steamify.io/api/v1/user/set-inviter'
+                headers = self.base_headers.copy()
+                headers["Authorization"] = f"Bearer {data.init_data}"
+                payload = {'invite_code': "WsHOpV"}
+                res = self.api_call(url_ref, headers=headers, json=payload)
+
         except json.JSONDecodeError:
             self.log(f'{Fore.LIGHTRED_EX}Не удалось декодировать JSON-ответ от API get_me. Ответ: {res.text}')
 
+            self.restart_script()
     def claim_farming(self, data: Data):
         url = "https://api.app.steamify.io/api/v1/farm/claim"
         headers = self.base_headers.copy()
@@ -137,14 +147,14 @@ class PixelTod:
         response_json = res.json()
         #self.log(f'{response_json}')
         farm = response_json.get('msg')
-        balance = response_json.get('data', {}).get('balance')
+        balance = response_json.get('data', {}).get('points')
         if farm == 'claim is not available':
             if balance == 0:
                 self.log(f"{Fore.LIGHTRED_EX}Первый запуск клейма")
             else:
                 self.log(f"{Fore.LIGHTRED_EX}Еще не пришло время клейма")
         else:
-            balance = response_json.get('data', {}).get('claim', 'N/A')
+            balance = response_json.get('data', {}).get('claim', {}).get('total_rewards')
             self.log(f"{Fore.LIGHTYELLOW_EX}Забрал с фарминга: {Fore.LIGHTWHITE_EX}{balance}")
         return
 
@@ -168,7 +178,8 @@ class PixelTod:
         headers["Authorization"] = f"Bearer {data.init_data}"
         res = self.api_call(url, headers=headers)
         response_json = res.json()
-        can_claim = response_json.get('data', {}).get('claimed_rewards', 0)
+        #self.log(f'{response_json}')
+        can_claim = response_json.get('data', {}).get('available_claim', 0)
         if can_claim > 0:
             url_claim = "https://api.app.steamify.io/api/v1/user/invite/claim"
             res = self.api_call(url_claim, headers=headers)
@@ -182,36 +193,41 @@ class PixelTod:
         return
 
     def solve_task(self, data: Data):
-        url_task = "https://api.app.steamify.io/api/v1/user/task/list"
-        headers = self.base_headers.copy()
-        headers["Authorization"] = f"Bearer {data.init_data}"
-        res = self.api_call(url_task, headers=headers)
-        response_json = res.json()
-        #self.log(f'{response_json}')
+        while True:
+            url_task = "https://api.app.steamify.io/api/v1/user/task/list"
+            headers = self.base_headers.copy()
+            headers["Authorization"] = f"Bearer {data.init_data}"
+            res = self.api_call(url_task, headers=headers)
+            response_json = res.json()
+            # self.log(f'{response_json}')
 
-        tasks = response_json.get('data', {}).get('tasks', [])
+            tasks = response_json.get('data', {}).get('tasks', [])
+            task_started = False
 
+            for task in tasks:
+                task_id = task["id"]
+                task_title = task["name"]
+                task_status = task["user_state"]["status"]
 
-        for task in tasks:
-            task_id = task["id"]
-            task_title = task["name"]
-            task_status = task["user_state"]["status"]
+                if task_status == "available":
+                    url_start = f"https://api.app.steamify.io/api/v1/user/task/{task_id}/start"
+                    self.api_call(url_start, headers=headers)
+                    task_started = True
+                    break
 
-            if task_status == "available" or task_status == "completed":
+                elif task_status == "completed":
+                    url_claim = f"https://api.app.steamify.io/api/v1/user/task/{task_id}/claim"
+                    res = self.api_call(url_claim, headers=headers)
+                    response_json = res.json()
 
-                url_start = f"https://api.app.steamify.io/api/v1/user/task/{task_id}/start"
-                res = self.api_call(url_start, headers=headers)
+                    if response_json.get("data") and response_json["data"]["user_state"]:
+                        claim_status = response_json["data"]["user_state"]["status"]
+                        if claim_status == "claimed":
+                            self.log(f"{Fore.LIGHTYELLOW_EX}Выполнил задание {task_title}!")
+                            continue
 
-
-                url_claim = f"https://api.app.steamify.io/api/v1/user/task/{task_id}/claim"
-                res = self.api_call(url_claim, headers=headers)
-                response_json = res.json()
-
-                if response_json.get("data") and response_json["data"]["user_state"]:
-                    claim_status = response_json["data"]["user_state"]["status"]
-                    if claim_status == "claimed":
-                        self.log(f"{Fore.LIGHTYELLOW_EX}Выполнил задание {task_title}!")
-                        continue
+            if not task_started:
+                break
 
     def checkin(self, data:Data):
         url = "https://api.app.steamify.io/api/v1/user/daily/claim"
@@ -258,6 +274,7 @@ class PixelTod:
     def log(self, message):
         now = datetime.now().isoformat(" ").split(".")[0]
         print(f"{Fore.LIGHTBLACK_EX}[{now}]{Style.RESET_ALL} {message}")
+
 
 
 if __name__ == "__main__":
