@@ -7,7 +7,7 @@ import requests
 from datetime import datetime
 from colorama import init, Fore, Style
 from urllib.parse import unquote
-from fake_useragent import UserAgent
+
 
 init(autoreset=True)
 
@@ -34,9 +34,7 @@ class PixelTod:
             "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0',
         }
 
-    def get_random_user_agent(self):
-        ua = UserAgent()
-        return ua.random
+
 
     def get_secret(self, userid):
         rawr = "adwawdasfajfklasjglrejnoierjboivrevioreboidwa"
