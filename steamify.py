@@ -136,7 +136,7 @@ class PixelTod:
         except json.JSONDecodeError:
             self.log(f'{Fore.LIGHTRED_EX}Не удалось декодировать JSON-ответ от API get_me. Ответ: {res.text}')
 
-            self.restart_script()
+
     def claim_farming(self, data: Data):
         url = "https://api.app.steamify.io/api/v1/farm/claim"
         headers = self.base_headers.copy()
