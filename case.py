@@ -21,7 +21,7 @@ class Data:
 
 class PixelTod:
     def __init__(self):
-        self.INTERVAL_DELAY = 2
+        self.INTERVAL_DELAY = 1
         self.base_headers = {
             "Accept": "application/json, text/plain, */*",
             "Accept-Language": "ru,en;q=0.9,en-GB;q=0.8,en-US;q=0.7",
@@ -67,7 +67,7 @@ class PixelTod:
                 self.countdown(self.INTERVAL_DELAY)
 
     def process_account(self, data: Data):
-        self.get_me(data)
+
         id_input, num = self.show_case_options(data)
 
         try:
@@ -110,30 +110,7 @@ class PixelTod:
                 print(f'{Fore.LIGHTRED_EX}Ошибка подключения соединения!')
                 continue
 
-    def get_me(self, data: Data):
-        url = 'https://api.app.steamify.io/api/v1/user/me'
-        headers = self.base_headers.copy()
-        headers["Authorization"] = f"Bearer {data.init_data}"
-        res = self.api_call(url, headers=headers)
 
-        if not res.text:
-            print(f'{Fore.LIGHTRED_EX}Пустой ответ от API get_me.')
-            return
-
-        try:
-            response_json = res.json()
-            balance = response_json.get('data', {}).get('points', 'N/A')
-            print(f'{Fore.LIGHTYELLOW_EX}Общий баланс: {Fore.LIGHTWHITE_EX}{balance}')
-            ref = response_json.get('data', {}).get('inviter')
-            if ref == 'None':
-                url_ref = 'https://api.app.steamify.io/api/v1/user/set-inviter'
-                headers = self.base_headers.copy()
-                headers["Authorization"] = f"Bearer {data.init_data}"
-                payload = {'invite_code': "WsHOpV"}
-                res = self.api_call(url_ref, headers=headers, data=json.dumps(payload), method='POST')
-
-        except json.JSONDecodeError:
-            print(f'{Fore.LIGHTRED_EX}Не удалось декодировать JSON-ответ от API get_me. Ответ: {res.text}')
 
     def claim_case(self, data: Data, id_input):
         url = f"https://api.app.steamify.io/api/v1/game/case/{id_input}/open"
@@ -160,7 +137,15 @@ class PixelTod:
         headers["Authorization"] = f"Bearer {data.init_data}"
         res = self.api_call(url, headers=headers)
         response_json = res.json()
+        #print(f'{response_json}')
 
+        url_balance = 'https://api.app.steamify.io/api/v1/user/me'
+        headers_balance = self.base_headers.copy()
+        headers_balance["Authorization"] = f"Bearer {data.init_data}"
+        res_balance = self.api_call(url_balance, headers=headers_balance)
+        response_json_balance = res_balance.json()
+        balance = response_json_balance.get('data', {}).get('points', 0)
+        print(f'{Fore.LIGHTYELLOW_EX}Общий баланс: {Fore.LIGHTWHITE_EX}{balance}')
         cases = response_json.get('data', [])
         if not cases:
             print(f'{Fore.LIGHTRED_EX}Не удалось получить список кейсов.')
@@ -171,7 +156,8 @@ class PixelTod:
             case_id = case.get('id')
             name = case.get('name')
             price = case.get('price')
-            print(f"{Fore.LIGHTYELLOW_EX}{case_id} = {Fore.LIGHTWHITE_EX}{name} {Fore.LIGHTYELLOW_EX}Цена: {price}")
+            max_count = balance // price
+            print(f"{Fore.LIGHTYELLOW_EX}{case_id} = {Fore.LIGHTWHITE_EX}{name} {Fore.LIGHTYELLOW_EX}Цена: {price} Можно открыть: {Fore.LIGHTWHITE_EX}{int(max_count)}")
 
         id_input = input(f"{Fore.LIGHTYELLOW_EX}Введи номер кейса:\n")
         num = input(f"{Fore.LIGHTYELLOW_EX}Сколько открывать?\n")
