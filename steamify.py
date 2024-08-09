@@ -22,7 +22,7 @@ class Data:
 
 class PixelTod:
     def __init__(self):
-        self.DEFAULT_COUNTDOWN = (6 * 3600) + (5 * 60)  # Интервал между повтором скрипта, 6 часов 5 минут дефолт
+        self.DEFAULT_COUNTDOWN = (2 * 3600) + (5 * 60)  # Интервал между повтором скрипта, 6 часов 5 минут дефолт
         self.INTERVAL_DELAY = 3  # Интервал между каждым аккаунтом, 3 секунды дефолт
         self.base_headers = {
             "Accept": "application/json, text/plain, */*",
@@ -79,6 +79,7 @@ class PixelTod:
         self.solve_task(data)
         self.checkin(data)
         self.solve_multiplier(data)
+        self.sparks(data)
 
     def countdown(self, t):
         while t:
@@ -136,7 +137,7 @@ class PixelTod:
         except json.JSONDecodeError:
             self.log(f'{Fore.LIGHTRED_EX}Не удалось декодировать JSON-ответ от API get_me. Ответ: {res.text}')
 
-
+            self.restart_script()
     def claim_farming(self, data: Data):
         url = "https://api.app.steamify.io/api/v1/farm/claim"
         headers = self.base_headers.copy()
@@ -156,6 +157,21 @@ class PixelTod:
             self.log(f"{Fore.LIGHTYELLOW_EX}Забрал с фарминга: {Fore.LIGHTWHITE_EX}{balance}")
         return
 
+    def sparks(self, data: Data):
+        url = "https://api.app.steamify.io/api/v1/game/case/inventory/claim"
+        headers = self.base_headers.copy()
+        headers["Authorization"] = f"Bearer {data.init_data}"
+        res = self.api_call(url, headers=headers)
+        response_json = res.json()
+        #self.log(f'{response_json}')
+        farm = response_json.get('msg')
+        balance = response_json.get('data', {}).get('points')
+        if farm == 'too early to claim':
+            self.log(f"{Fore.LIGHTRED_EX}Еще не пришло время клейма sparks")
+        else:
+            balance = response_json.get('data', {}).get('claimed_sparks', {})
+            self.log(f"{Fore.LIGHTYELLOW_EX}Забрал sparks: {Fore.LIGHTWHITE_EX}{balance}")
+        return
     def start_farming(self, data: Data):
         url = "https://api.app.steamify.io/api/v1/farm/start"
         headers = self.base_headers.copy()
